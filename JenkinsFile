@@ -1,0 +1,53 @@
+pipeline {
+  agent any
+  tools { nodejs 'NodeJS_18_LTS' }   // must match your NodeJS plugin name
+
+  stages {
+    stage('Checkout') {
+      steps {
+        git branch: 'main',
+            url: 'https://github.com/Cyrus0107/8.2CDevSecOps.git'
+      }
+    }
+
+    stage('List Files') {
+      steps {
+        sh 'pwd && ls -la | head -50'
+      }
+    }
+
+    stage('Install Dependencies') {
+      steps {
+        sh 'npm ci || npm install'
+      }
+    }
+
+    stage('Run Tests') {
+      steps {
+        sh 'npm test || true'
+      }
+    }
+
+    stage('Generate Coverage Report') {
+      steps {
+        sh 'npm run coverage || true'
+      }
+    }
+
+    stage('NPM Audit (Security Scan)') {
+      steps {
+        sh 'npm audit || true'
+        sh 'npm audit --json > audit.json || true'
+      }
+    }
+
+    stage('Archive Reports') {
+      steps {
+        sh 'mkdir -p artifacts'
+        sh 'cp -R coverage || true artifacts/'
+        sh 'cp audit.json artifacts/ || true'
+        archiveArtifacts artifacts: 'artifacts/**', fingerprint: true
+      }
+    }
+  }
+}
